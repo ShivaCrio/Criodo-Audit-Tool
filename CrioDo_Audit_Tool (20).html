@@ -1,0 +1,1917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Crio.Do — AI Call Audit Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:#0b0d13; --surface:#10131c; --border:#1c2035; --border2:#242840;
+    --accent:#4f6ef7; --accent2:#7c3aed; --green:#34d399; --red:#f87171;
+    --text:#e2e6f3; --text2:#8b92b8; --text3:#454d6e;
+    --input-bg:#0d0f18; --result-bg:#09090f; --history-head-bg:#090b12;
+    --history-row-hover:#0d0f18; --history-row-border:#0e1018;
+    --status-bg:#0c1228; --status-border:#1a2050;
+    --topbar-bg:rgba(11,13,19,0.96);
+    --font-body:'DM Sans',sans-serif; --font-display:'Syne',sans-serif;
+  }
+  body.light {
+    --bg:#f0f2f8; --surface:#ffffff; --border:#dde1f0; --border2:#c8cee8;
+    --text:#1a1f3c; --text2:#4a5280; --text3:#8b93b8;
+    --input-bg:#f7f8fc; --result-bg:#f7f8fc; --history-head-bg:#eef0f8;
+    --history-row-hover:#f5f6fb; --history-row-border:#eaecf5;
+    --status-bg:#eef1ff; --status-border:#c5cef7;
+    --topbar-bg:rgba(240,242,248,0.96);
+  }
+  body.light .topbar{box-shadow:0 1px 12px rgba(79,110,247,0.08)}
+  body.light .card-title{color:#1a1f3c}
+  body.light .logo-text{color:#1a1f3c}
+  body.light .gate-title{color:#1a1f3c}
+  body.light .r-section{background:rgba(79,110,247,0.07);color:#000000}
+  body.light .r-bullet{color:#2a3060}
+  body.light .r-text{color:#3a4170}
+  body.light .r-bold{color:#2a3060}
+  body.light .history-head{color:#1a1f3c}
+  body.light .c-primary{color:#1a1f3c}
+  body.light .ps-badge{background:#e8ecff;color:var(--accent)}
+  body.light .status-bar{color:var(--accent)}
+  body.light .gate-input{background:#f7f8fc;color:#1a1f3c}
+  body.light .field input,body.light .field select{background:var(--input-bg);color:#1a1f3c}
+  body.light .field select option{background:#fff;color:#1a1f3c}
+  body.light .field input:hover:not(:focus),body.light .field select:hover:not(:focus){border-color:#a0aadc}
+  body.light .file-zone:hover{background:rgba(79,110,247,0.04)}
+  body.light .btn-ghost{color:var(--text2)}
+  body.light .btn-dl{color:var(--text2)}
+  body.light .admin-btn{color:var(--text3)}
+  body.light ::-webkit-scrollbar-thumb{background:#c5cae8}
+  body.light .tab-bar{background:var(--surface);border-color:var(--border)}
+  body.light .tab-btn{color:var(--text2)}
+  body.light .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+  body.light .tab-btn:hover:not(.active){color:var(--text)}
+  body.light .sheets-banner{background:#eef1ff;border-color:#c5cef7;color:#1a1f3c}
+  body.light .sheets-banner a{color:var(--accent)}
+  body.light .summ-empty{color:var(--text3)}
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;transition:background .25s,color .25s}
+  ::placeholder{color:var(--text3)}
+  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:#252b48;border-radius:3px}
+
+  /* ── ADMIN GATE ── */
+  #adminGate{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center}
+  .gate-box{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:2.4rem 2rem;width:100%;max-width:400px;text-align:center}
+  .gate-icon{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;margin:0 auto 1.2rem;font-family:var(--font-display);font-weight:800;font-size:1.3rem;color:#fff;box-shadow:0 4px 20px rgba(79,110,247,0.35)}
+  .gate-title{font-family:var(--font-display);font-weight:800;font-size:1.2rem;color:#fff;margin-bottom:0.3rem}
+  .gate-sub{font-size:0.78rem;color:var(--text3);margin-bottom:1.6rem}
+  .gate-label{font-size:0.69rem;font-weight:600;letter-spacing:0.09em;color:var(--text3);text-transform:uppercase;display:block;text-align:left;margin-bottom:0.35rem}
+  .gate-input{background:#0d0f18;border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:0.72rem 0.95rem;font-size:0.875rem;font-family:var(--font-body);width:100%;margin-bottom:0.7rem;transition:border-color .2s,box-shadow .2s}
+  .gate-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,110,247,.12)}
+  .gate-btn{width:100%;padding:0.85rem;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:9px;color:#fff;font-family:var(--font-display);font-weight:700;font-size:0.95rem;letter-spacing:0.05em;cursor:pointer;transition:opacity .2s;margin-top:0.3rem}
+  .gate-btn:hover{opacity:0.88}
+  .gate-err{color:var(--red);font-size:0.78rem;margin-top:0.6rem;display:none}
+  .gate-hint{font-size:0.72rem;color:var(--text3);margin-top:1rem;line-height:1.5}
+  .remember-row{display:flex;align-items:center;gap:.55rem;margin-top:.9rem;justify-content:center}
+  .remember-row input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+  .remember-row label{font-size:.75rem;color:var(--text2);cursor:pointer;user-select:none}
+  .gate-prefilled{display:flex;align-items:center;gap:.5rem;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);border-radius:8px;padding:.55rem .85rem;margin-bottom:.7rem;font-size:.78rem;color:var(--green)}
+  .gate-prefilled span{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .gate-forget{background:none;border:none;color:var(--text3);cursor:pointer;font-size:.72rem;padding:.1rem .3rem;transition:color .15s}
+  .gate-forget:hover{color:var(--red)}
+
+  /* ── TOPBAR ── */
+  .topbar{position:sticky;top:0;z-index:100;background:var(--topbar-bg);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0.9rem 2rem;display:flex;align-items:center;justify-content:space-between}
+  .logo{display:flex;align-items:center;gap:0.8rem}
+  .logo-icon{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:800;font-size:0.95rem;color:#fff;box-shadow:0 4px 14px rgba(79,110,247,.3)}
+  .logo-text{font-family:var(--font-display);font-weight:800;font-size:1.05rem;color:#fff}
+  .logo-sub{font-size:0.65rem;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-top:1px}
+  .topbar-right{display:flex;align-items:center;gap:1rem}
+  .api-badge{display:flex;align-items:center;gap:0.4rem;font-size:0.72rem;color:var(--green);background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);padding:0.3rem 0.7rem;border-radius:20px}
+  .api-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+  .sheets-dot{width:6px;height:6px;border-radius:50%;background:var(--text3)}
+  .sheets-dot.connected{background:var(--green)}
+  .admin-btn{background:none;border:1px solid var(--border2);border-radius:6px;color:var(--text3);font-size:0.72rem;font-family:var(--font-body);padding:0.28rem 0.7rem;cursor:pointer;transition:all .15s}
+  .admin-btn:hover{border-color:var(--accent);color:#7c9fff}
+
+  /* ── TABS ── */
+  .tab-bar{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--surface);padding:0 2rem;position:sticky;top:57px;z-index:90}
+  .tab-btn{background:none;border:none;border-bottom:2px solid transparent;padding:.75rem 1.2rem;font-size:.85rem;font-weight:600;font-family:var(--font-body);color:var(--text3);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:.4rem;margin-bottom:-1px}
+  .tab-btn.active{color:#fff;border-bottom-color:var(--accent)}
+  .tab-btn:hover:not(.active){color:var(--text2)}
+  .tab-badge{background:var(--accent);color:#fff;font-size:.62rem;font-weight:700;padding:.1rem .38rem;border-radius:10px;min-width:18px;text-align:center}
+
+  /* ── CONTAINER ── */
+  .container{max-width:900px;margin:0 auto;padding:2rem 1.5rem 4rem}
+  .tab-panel{display:none}.tab-panel.active{display:block}
+
+  /* ── CARDS ── */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.6rem;margin-bottom:1.2rem}
+  .card-title{font-family:var(--font-display);font-weight:700;font-size:0.9rem;color:#fff;margin-bottom:1.2rem;display:flex;align-items:center;gap:0.5rem}
+
+  /* ── SHEETS BANNER ── */
+  .sheets-banner{background:#0c1228;border:1px solid #1a2050;border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.2rem;font-size:.8rem;color:#8ba3cc;display:flex;align-items:center;gap:.7rem;flex-wrap:wrap}
+  .sheets-banner strong{color:#a0b4e0}
+  .sheets-banner a{color:#7c9fff;text-decoration:none}
+  .sheets-banner a:hover{text-decoration:underline}
+  .sheets-status{display:flex;align-items:center;gap:.35rem;white-space:nowrap}
+
+  /* ── FORM ── */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0.9rem}
+  .full{grid-column:1/-1}
+  .field{display:flex;flex-direction:column;gap:0.35rem}
+  .field label{font-size:0.69rem;font-weight:600;letter-spacing:.09em;color:var(--text3);text-transform:uppercase}
+  .field input,.field select{background:var(--input-bg);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:0.7rem 0.95rem;font-size:0.875rem;font-family:var(--font-body);width:100%;transition:border-color .2s,box-shadow .2s;appearance:none}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,110,247,.12)}
+  .field input:hover:not(:focus),.field select:hover:not(:focus){border-color:#2a3360}
+  .field select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235a6180' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.9rem center;padding-right:2.2rem}
+  .field select option{background:#13161f}
+
+  /* ── FILE ZONE ── */
+  .file-zone{border:1.5px dashed var(--border2);border-radius:10px;padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+  .file-zone:hover{border-color:var(--accent);background:rgba(79,110,247,.04)}
+  .file-zone.dragover{border-color:var(--accent);background:rgba(79,110,247,.08)}
+  .file-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .fz-icon{font-size:1.8rem;margin-bottom:0.4rem}
+  .fz-text{font-size:0.83rem;color:var(--text2)}
+  .fz-sub{font-size:0.71rem;color:var(--text3);margin-top:0.2rem}
+  .file-zone.selected{border-color:var(--green)!important;background:rgba(52,211,153,.04)!important}
+  .file-zone.selected .fz-text{color:var(--green);font-weight:600}
+
+  /* ── BUTTONS ── */
+  .btn-run{width:100%;padding:0.92rem;margin-top:1.2rem;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:10px;color:#fff;font-family:var(--font-display);font-weight:700;font-size:0.95rem;letter-spacing:.05em;cursor:pointer;transition:opacity .2s,transform .15s,box-shadow .2s;box-shadow:0 4px 24px rgba(79,110,247,.28);display:flex;align-items:center;justify-content:center;gap:0.5rem}
+  .btn-run:hover:not(:disabled){opacity:.9;transform:translateY(-1px);box-shadow:0 6px 32px rgba(79,110,247,.38)}
+  .btn-run:disabled{opacity:.45;cursor:not-allowed;transform:none}
+  .btn-ghost{background:none;border:1px solid var(--border2);border-radius:7px;color:var(--text2);padding:.3rem .65rem;cursor:pointer;font-size:.75rem;font-family:var(--font-body);transition:all .15s;white-space:nowrap}
+  .btn-ghost:hover{border-color:var(--accent);color:#7c9fff}
+  .btn-dl{background:none;border:1px solid var(--border2);border-radius:7px;color:var(--text2);padding:.3rem .65rem;cursor:pointer;font-size:.75rem;font-family:var(--font-body);transition:all .15s;white-space:nowrap}
+  .btn-dl:hover{border-color:var(--green);color:var(--green)}
+  .btn-summarise{padding:.7rem 1.4rem;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:9px;color:#fff;font-family:var(--font-display);font-weight:700;font-size:.85rem;cursor:pointer;transition:opacity .2s,transform .15s;box-shadow:0 3px 16px rgba(79,110,247,.3);display:flex;align-items:center;gap:.4rem}
+  .btn-summarise:hover:not(:disabled){opacity:.9;transform:translateY(-1px)}
+  .btn-summarise:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+  /* ── ERROR / STATUS ── */
+  .error-box{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);border-radius:8px;padding:.7rem .9rem;color:var(--red);font-size:.8rem;margin-top:.9rem;display:none;gap:.5rem}
+  .status-bar{display:none;align-items:center;gap:.65rem;background:var(--status-bg);border:1px solid var(--status-border);border-radius:9px;padding:.75rem 1rem;color:#7c9fff;font-size:.82rem;margin-bottom:1.2rem}
+
+  /* ── SPINNER ── */
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .spinner{width:16px;height:16px;border:2px solid rgba(124,159,255,.25);border-top-color:#7c9fff;border-radius:50%;animation:spin .75s linear infinite;flex-shrink:0}
+  .spinner-w{width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .75s linear infinite}
+
+  /* ── RESULT ── */
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .fade-up{animation:fadeUp .4s ease}
+  .result-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.1rem;flex-wrap:wrap;gap:.6rem}
+  .result-meta{font-size:.72rem;color:var(--text3);margin-top:.25rem}
+  .result-actions{display:flex;gap:.4rem;flex-wrap:wrap}
+  .result-body{background:var(--result-bg);border:1px solid var(--border);border-radius:10px;padding:1.6rem 1.8rem;max-height:660px;overflow-y:auto}
+  .r-section{font-family:Arial,sans-serif;font-weight:700;font-size:.93rem;color:#ffffff;margin-top:2rem;margin-bottom:.8rem;padding:.55rem .9rem;background:rgba(79,110,247,0.08);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;letter-spacing:.01em;display:flex;align-items:center;gap:.5rem}
+  .r-section:first-child{margin-top:0}
+  .r-section-num{background:var(--accent);color:#fff;font-size:.72rem;font-weight:800;min-width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .r-bullet{display:flex;align-items:flex-start;gap:.6rem;color:#bfc5df;padding:.3rem 0 .3rem .5rem;font-size:.875rem;line-height:1.7}
+  .r-bullet-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:.45rem;opacity:.7}
+  .r-numbered{display:flex;align-items:flex-start;gap:.65rem;color:#bfc5df;padding:.3rem 0 .3rem .5rem;font-size:.875rem;line-height:1.7}
+  body.light .r-numbered{color:#2a3060}
+  .r-num-badge{background:rgba(79,110,247,0.15);color:var(--accent);font-size:.72rem;font-weight:700;min-width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.18rem}
+  body.light .r-num-badge{background:rgba(79,110,247,0.12)}
+  .r-text{color:#a8aecb;font-size:.875rem;line-height:1.8;padding:.2rem 0 .2rem .5rem}
+  .r-bold{font-weight:600;color:#c8cde8}
+  .r-gap{height:.5rem}
+  .r-score{display:inline-flex;align-items:center;gap:.4rem;margin:.6rem 0 .2rem .5rem;font-size:.8rem;font-weight:700}
+  .r-score-bar{height:6px;border-radius:3px;background:var(--border2);overflow:hidden;width:80px;display:inline-block;vertical-align:middle}
+  .r-score-fill{height:100%;border-radius:3px;transition:width .3s}
+  .r-score-num{font-family:var(--font-display);font-size:.9rem;font-weight:800}
+  .score-high{color:#34d399}.score-mid{color:#fbbf24}.score-low{color:#f87171}
+  .score-fill-high{background:#34d399}.score-fill-mid{background:#fbbf24}.score-fill-low{background:#f87171}
+  body.light .r-score-bar{background:#dde1f0}
+
+  /* ── HISTORY ── */
+  .history-card{padding:0;overflow:hidden}
+  .history-head{padding:.9rem 1.2rem;border-bottom:1px solid var(--border);font-family:var(--font-display);font-weight:700;font-size:.88rem;color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
+  .filter-bar{padding:.75rem 1.2rem;border-bottom:1px solid var(--border);display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;background:var(--history-head-bg)}
+  .filter-bar input,.filter-bar select{background:var(--input-bg);border:1px solid var(--border2);border-radius:7px;color:var(--text);padding:.38rem .75rem;font-size:.78rem;font-family:var(--font-body)}
+  .filter-bar input{flex:1;min-width:140px}
+  .filter-bar select{min-width:130px}
+  .filter-bar input:focus,.filter-bar select:focus{outline:none;border-color:var(--accent)}
+  .filter-clear{background:none;border:none;color:var(--text3);font-size:.75rem;cursor:pointer;padding:.35rem .5rem;font-family:var(--font-body);transition:color .15s}
+  .filter-clear:hover{color:var(--red)}
+  .history-cols{display:grid;grid-template-columns:1.4fr 1.3fr .75fr .75fr .75fr auto;gap:.5rem;padding:.45rem 1.2rem;background:var(--history-head-bg);font-size:.66rem;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase}
+  .history-row{display:grid;grid-template-columns:1.4fr 1.3fr .75fr .75fr .75fr auto;gap:.5rem;align-items:start;padding:.72rem 1.2rem;border-bottom:1px solid var(--history-row-border);font-size:.8rem;transition:background .15s}
+  .history-row:last-child{border-bottom:none}
+  .history-row:hover{background:var(--history-row-hover)}
+  .c-primary{color:#c5cae0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .c-sec{color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ps-badge{display:inline-block;padding:.16rem .52rem;border-radius:4px;font-size:.67rem;font-weight:700;letter-spacing:.06em;background:#181d38;color:#7c9fff}
+  .row-actions{display:flex;gap:4px;flex-wrap:wrap}
+  /* notes panel */
+  .notes-panel{grid-column:1/-1;margin-top:.3rem;padding:.5rem .6rem;background:rgba(79,110,247,.05);border:1px solid rgba(79,110,247,.12);border-radius:7px;display:none}
+  .notes-panel.open{display:block}
+  .notes-panel textarea{width:100%;background:transparent;border:none;color:var(--text2);font-size:.8rem;font-family:var(--font-body);resize:vertical;min-height:56px;outline:none;line-height:1.6}
+  .notes-panel textarea::placeholder{color:var(--text3)}
+  .notes-save-row{display:flex;justify-content:flex-end;gap:.4rem;margin-top:.35rem}
+  .notes-saved-tag{font-size:.7rem;color:var(--green);display:none;align-items:center;gap:.25rem}
+  body.light .notes-panel{background:rgba(79,110,247,.04);border-color:rgba(79,110,247,.15)}
+  body.light .notes-panel textarea{color:#3a4170}
+
+  /* ── BDA SUMMARY TAB ── */
+  .summ-controls{display:flex;gap:.8rem;align-items:flex-end;flex-wrap:wrap;margin-bottom:1.2rem}
+  .summ-controls .field{flex:1;min-width:180px}
+  .summ-empty{text-align:center;padding:3rem 1rem;color:var(--text3);font-size:.85rem;line-height:1.8}
+  .summ-empty-icon{font-size:2.4rem;margin-bottom:.8rem;opacity:.5}
+  .bda-list-card{padding:0;overflow:hidden}
+  .bda-list-head{padding:.9rem 1.2rem;border-bottom:1px solid var(--border);font-family:var(--font-display);font-weight:700;font-size:.88rem;color:#fff;display:flex;justify-content:space-between;align-items:center}
+  .bda-row{display:grid;grid-template-columns:1.8fr 1fr 1fr auto;gap:.6rem;align-items:center;padding:.8rem 1.2rem;border-bottom:1px solid var(--history-row-border);font-size:.8rem;transition:background .15s}
+  .bda-row:last-child{border-bottom:none}
+  .bda-row:hover{background:var(--history-row-hover)}
+  .bda-cols{display:grid;grid-template-columns:1.8fr 1fr 1fr auto;gap:.6rem;padding:.45rem 1.2rem;background:var(--history-head-bg);font-size:.66rem;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase}
+  .audit-count-badge{display:inline-flex;align-items:center;gap:.3rem;background:rgba(79,110,247,.12);color:var(--accent);font-size:.72rem;font-weight:700;padding:.18rem .5rem;border-radius:5px}
+
+  /* ── SAVE INDICATOR ── */
+  .save-indicator{position:fixed;bottom:1.4rem;right:1.4rem;background:#1a2840;border:1px solid #2a4060;border-radius:8px;padding:.55rem 1rem;font-size:.75rem;color:#7cb8ff;display:none;align-items:center;gap:.5rem;z-index:200;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+  .save-indicator.visible{display:flex}
+  .save-indicator.success{color:var(--green);border-color:rgba(52,211,153,.3);background:rgba(10,30,20,.9)}
+  .save-indicator.error{color:var(--red);border-color:rgba(248,113,113,.3);background:rgba(30,10,10,.9)}
+
+  /* Google Sign-In removed */
+
+  /* ── USER PILL (topbar) ── */
+  .user-pill{display:flex;align-items:center;gap:.4rem;background:rgba(79,110,247,.12);border:1px solid rgba(79,110,247,.25);border-radius:20px;padding:.25rem .65rem .25rem .35rem;font-size:.75rem;color:#1a1f3c;font-weight:600;cursor:pointer;position:relative;user-select:none}
+  body:not(.light) .user-pill{color:#e2e6f3}
+  .user-dropdown{position:absolute;top:calc(100% + 8px);right:0;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:.6rem;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:300;display:none;flex-direction:column;gap:.3rem}
+  .user-dropdown.open{display:flex}
+  .user-dropdown-email{font-size:.75rem;color:var(--text2);padding:.3rem .5rem;word-break:break-all}
+  .user-dropdown-divider{height:1px;background:var(--border);margin:.1rem 0}
+  .user-dropdown-logout{background:none;border:none;color:var(--red);font-size:.8rem;font-weight:600;font-family:var(--font-body);padding:.4rem .5rem;cursor:pointer;text-align:left;border-radius:6px;transition:background .15s}
+  .user-dropdown-logout:hover{background:rgba(248,113,113,.08)}
+  .user-pill img{width:20px;height:20px;border-radius:50%}
+
+  /* ── DASHBOARD ── */
+  .dash-filters{display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1.4rem}
+  .dash-filters .field{min-width:150px;flex:1}
+  .dash-filters input,.dash-filters select{background:var(--input-bg);border:1px solid var(--border2);border-radius:7px;color:var(--text);padding:.38rem .75rem;font-size:.78rem;font-family:var(--font-body);width:100%}
+  .dash-filters input:focus,.dash-filters select:focus{outline:none;border-color:var(--accent)}
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.9rem;margin-bottom:1.4rem}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.2rem}
+  .stat-value{font-family:var(--font-display);font-weight:800;font-size:1.7rem;color:#fff;line-height:1}
+  .stat-label{font-size:.72rem;color:var(--text3);margin-top:.3rem;text-transform:uppercase;letter-spacing:.07em}
+  .stat-sub{font-size:.75rem;color:var(--accent);margin-top:.2rem;font-weight:600}
+  body.light .stat-value{color:#1a1f3c}
+  .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.2rem}
+  .chart-card.full-width{grid-column:1/-1}
+  .chart-title{font-family:var(--font-display);font-weight:700;font-size:.85rem;color:#fff;margin-bottom:1rem}
+  body.light .chart-title{color:#1a1f3c}
+  .chart-wrap{position:relative;height:240px}
+  .chart-wrap.tall{height:300px}
+  .mgr-table{width:100%;border-collapse:collapse;font-size:.8rem}
+  .mgr-table th{text-align:left;padding:.5rem .75rem;background:var(--history-head-bg);color:var(--text3);font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+  .mgr-table td{padding:.6rem .75rem;border-bottom:1px solid var(--history-row-border);color:var(--text2)}
+  .mgr-table tr:last-child td{border-bottom:none}
+  .mgr-table tr:hover td{background:var(--history-row-hover)}
+  .mgr-table .td-primary{color:#c5cae0;font-weight:500}
+  body.light .mgr-table .td-primary{color:#1a1f3c}
+  .rank-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:.7rem;font-weight:800;background:rgba(79,110,247,.15);color:var(--accent)}
+  .rank-badge.gold{background:rgba(251,191,36,.15);color:#fbbf24}
+  .rank-badge.silver{background:rgba(156,163,175,.15);color:#9ca3af}
+  .rank-badge.bronze{background:rgba(180,83,9,.15);color:#b45309}
+  .no-data{text-align:center;padding:2.5rem;color:var(--text3);font-size:.83rem}
+
+  @media(max-width:640px){
+    .grid2{grid-template-columns:1fr}.full{grid-column:1}
+    .history-cols,.history-row{grid-template-columns:1fr 1fr auto}
+    .bda-cols,.bda-row{grid-template-columns:1fr auto}
+    .hc3,.hc4,.bda-col-hide{display:none}
+    .container{padding:1.2rem 1rem 3rem}
+    .topbar{padding:.9rem 1rem}
+    .tab-bar{padding:0 1rem}
+    .summ-controls{flex-direction:column}
+    .stat-grid{grid-template-columns:1fr 1fr}
+    .chart-grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body class="light">
+
+<!-- ═══════════ ADMIN GATE ═══════════ -->
+<div id="adminGate">
+  <div class="gate-box">
+    <div class="gate-icon">C</div>
+    <div class="gate-title">Crio.Do Audit Tool</div>
+    <div class="gate-sub">Sign in with your Crio.Do email and password</div>
+
+    <label class="gate-label" style="margin-top:.4rem">Email ID</label>
+    <input class="gate-input" type="email" id="gateUserId"
+      placeholder="yourname@criodo.co.in"
+      onkeydown="if(event.key==='Enter')document.getElementById('gatePassword').focus()"/>
+
+    <label class="gate-label" style="margin-top:.2rem">Password</label>
+    <input class="gate-input" type="password" id="gatePassword"
+      placeholder="Enter password..."
+      onkeydown="if(event.key==='Enter')unlockTool()"/>
+
+    <button class="gate-btn" onclick="unlockTool()" style="margin-top:.9rem">Sign In</button>
+
+    <div class="gate-err" id="gateErr" style="display:none;margin-top:.6rem"></div>
+
+    <div class="gate-hint" style="margin-top:1rem">
+      🔒 Access restricted to @criodo.co.in and @criodo.com accounts only.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MAIN APP ═══════════ -->
+<div id="mainApp" style="display:none">
+
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-icon">C</div>
+      <div>
+        <div class="logo-text">Crio.Do — AI Call Audit</div>
+        <div class="logo-sub">Gemini 2.5 Flash · Audio Intelligence</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="api-badge" id="apiBadge"><div class="api-badge-dot"></div>API Active</div>
+      <div class="api-badge" id="sheetsBadge" style="display:none"><div class="sheets-dot connected"></div><span>Sheets Connected</span></div>
+      <div class="user-pill" id="userPill" style="display:none" onclick="toggleUserDropdown(event)">
+        <span style="font-size:.8rem">👤</span>
+        <span id="userPillName"></span>
+        <div class="user-dropdown" id="userDropdown">
+          <div class="user-dropdown-email" id="userDropdownEmail"></div>
+          <div class="user-dropdown-divider"></div>
+          <button class="user-dropdown-logout" onclick="logoutUser(event)">🚪 Logout</button>
+        </div>
+      </div>
+      <button class="admin-btn" id="themeBtn" onclick="toggleTheme()">🌙 Dark</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('audit',this)">🎯 New Audit</button>
+    <button class="tab-btn" onclick="switchTab('history',this)">📋 Audit History</button>
+    <button class="tab-btn" onclick="switchTab('summary',this)">📊 BDA Summary</button>
+    <button class="tab-btn" id="tabBtnDash" onclick="switchTab('dashboard',this)">📈 Dashboard</button>
+    <button class="tab-btn" id="tabBtnSetup" onclick="switchTab('setup',this)">⚙️ Setup Guide</button>
+  </div>
+
+  <div class="container">
+
+    <!-- ══════════ TAB: AUDIT ══════════ -->
+    <div class="tab-panel active" id="tab-audit">
+
+      <div class="card">
+        <div class="card-title"><span>🎯</span> New Audit</div>
+        <div class="grid2">
+          <div class="field full">
+            <label>Problem Statement</label>
+            <select id="problemStatement">
+              <option value="">Select a problem statement...</option>
+              <option value="ps1">Qualified Leads Not Converted — Reason for Non-Conversion</option>
+              <option value="ps2">Long Calls with No Session Booking</option>
+              <option value="ps3">Sessions Booked but Not Attended / Conducted</option>
+              <option value="ps4">OJT BDAs — Struggling to Pick Up &amp; Generate Revenue</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Lead Email</label>
+            <input type="email" id="leadEmail" placeholder="lead@example.com"/>
+          </div>
+          <div class="field">
+            <label>BDA Email</label>
+            <input type="email" id="bdaEmail" placeholder="bda@crio.do"/>
+          </div>
+          <div class="field">
+            <label>Date of Call</label>
+            <input type="date" id="callDate"/>
+          </div>
+          <div class="field">
+            <label>Date of Audit</label>
+            <input type="date" id="auditDate"/>
+          </div>
+          <div class="field full">
+            <label>Call Recording File</label>
+            <div class="file-zone" id="fileZone">
+              <input type="file" id="audioFile" accept="audio/*,video/*" onchange="handleFile(this)"/>
+              <div class="fz-icon" id="fzIcon">🎙️</div>
+              <div class="fz-text" id="fzText">Click to upload or drag &amp; drop audio file</div>
+              <div class="fz-sub" id="fzSub">MP3, WAV, M4A, OGG, FLAC — max 100MB</div>
+            </div>
+          </div>
+        </div>
+        <div class="error-box" id="errorBox"><span>⚠</span><span id="errorMsg"></span></div>
+        <button class="btn-run" id="runBtn" onclick="runAudit()">▶&nbsp; Run Audit</button>
+      </div>
+
+      <div class="status-bar" id="statusBar">
+        <div class="spinner"></div>
+        <span id="statusMsg">Processing...</span>
+      </div>
+
+      <div class="card fade-up" id="resultCard" style="display:none">
+        <div class="result-header">
+          <div>
+            <div class="card-title" style="margin-bottom:.2rem"><span>📋</span> Audit Report</div>
+            <div class="result-meta" id="resultMeta"></div>
+          </div>
+          <div class="result-actions">
+            <button class="btn-dl" onclick="dlDoc()">⬇ DOC</button>
+            <button class="btn-dl" onclick="dlExcel()">⬇ Excel</button>
+          </div>
+        </div>
+        <div class="result-body" id="resultBody"></div>
+      </div>
+
+    </div>
+
+    <!-- ══════════ TAB: HISTORY ══════════ -->
+    <div class="tab-panel" id="tab-history">
+      <div class="card history-card" id="historyCard">
+        <div class="history-head">
+          <span>All Audits</span>
+          <span id="historyCount" style="color:var(--text3);font-weight:400;font-size:.78rem"></span>
+        </div>
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <input type="text" id="filterBda" placeholder="🔍 Search BDA email..." oninput="applyFilters()"/>
+          <input type="text" id="filterLead" placeholder="🔍 Lead email..." oninput="applyFilters()"/>
+          <select id="filterPs" onchange="applyFilters()">
+            <option value="">All Problem Statements</option>
+            <option value="ps1">PS1 — Non-Conversion</option>
+            <option value="ps2">PS2 — No Booking</option>
+            <option value="ps3">PS3 — No-Show</option>
+            <option value="ps4">PS4 — OJT</option>
+          </select>
+          <input type="date" id="filterDateFrom" title="Call date from" onchange="applyFilters()"/>
+          <input type="date" id="filterDateTo" title="Call date to" onchange="applyFilters()"/>
+          <button class="filter-clear" onclick="clearFilters()">✕ Clear</button>
+        </div>
+        <div class="history-cols">
+          <div>BDA</div><div>Lead</div>
+          <div>Call Date</div><div>Audit Date</div><div>Type</div><div>Actions</div>
+        </div>
+        <div id="historyRows">
+          <div style="padding:2rem;text-align:center;color:var(--text3);font-size:.83rem">No audits yet — run your first audit to see it here.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ TAB: BDA SUMMARY ══════════ -->
+    <div class="tab-panel" id="tab-summary">
+
+      <div class="card">
+        <div class="card-title"><span>📊</span> BDA Performance Summary</div>
+        <p style="font-size:.83rem;color:var(--text2);margin-bottom:1.2rem;line-height:1.6">Select a BDA and Problem Statement to generate an AI summary of all their audits — covering recurring patterns, coaching priorities, and a PS-level comparison.</p>
+
+        <div class="summ-controls">
+          <div class="field">
+            <label>BDA Email</label>
+            <select id="summBdaSelect">
+              <option value="">Select BDA...</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Problem Statement</label>
+            <select id="summPsSelect">
+              <option value="">Select PS...</option>
+              <option value="ps1">PS1 — Qualified Leads Not Converted</option>
+              <option value="ps2">PS2 — Long Calls, No Booking</option>
+              <option value="ps3">PS3 — Sessions Not Attended</option>
+              <option value="ps4">PS4 — OJT BDAs Struggling</option>
+            </select>
+          </div>
+          <button class="btn-summarise" id="summBtn" onclick="runSummary()">
+            <span>✦</span> Summarise
+          </button>
+        </div>
+
+        <div id="summAuditPreview" style="display:none">
+          <div style="font-size:.72rem;color:var(--text3);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.08em;font-weight:600">Audits included in summary</div>
+          <div id="summPreviewList" style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1rem"></div>
+        </div>
+      </div>
+
+      <div class="status-bar" id="summStatusBar">
+        <div class="spinner"></div>
+        <span id="summStatusMsg">Generating summary...</span>
+      </div>
+
+      <div class="card fade-up" id="summResultCard" style="display:none">
+        <div class="result-header">
+          <div>
+            <div class="card-title" style="margin-bottom:.2rem"><span>🧠</span> BDA Summary Report</div>
+            <div class="result-meta" id="summResultMeta"></div>
+          </div>
+          <div class="result-actions">
+            <button class="btn-dl" onclick="dlSummDoc()">⬇ DOC</button>
+            <button class="btn-dl" onclick="dlSummExcel()">⬇ Excel</button>
+          </div>
+        </div>
+        <div class="result-body" id="summResultBody"></div>
+      </div>
+
+      <div class="card bda-list-card" id="bdaListCard" style="display:none">
+        <div class="bda-list-head">
+          <span>Audited BDAs</span>
+          <span style="color:var(--text3);font-weight:400;font-size:.78rem" id="bdaListCount"></span>
+        </div>
+        <div class="bda-cols">
+          <div>BDA Email</div><div>PS</div><div class="bda-col-hide">Audits</div><div>Actions</div>
+        </div>
+        <div id="bdaListRows"></div>
+      </div>
+
+    </div>
+
+    <!-- ══════════ TAB: DASHBOARD ══════════ -->
+    <div class="tab-panel" id="tab-dashboard">
+
+      <div class="card" style="margin-bottom:1.2rem">
+        <div class="card-title"><span>🔽</span> Dashboard Filters</div>
+        <div class="dash-filters">
+          <div class="field">
+            <label>Date From</label>
+            <input type="date" id="dashDateFrom" onchange="renderDashboard()"/>
+          </div>
+          <div class="field">
+            <label>Date To</label>
+            <input type="date" id="dashDateTo" onchange="renderDashboard()"/>
+          </div>
+          <div class="field">
+            <label>Manager Email</label>
+            <select id="dashManagerFilter" onchange="renderDashboard()">
+              <option value="">All Managers</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Problem Statement</label>
+            <select id="dashPsFilter" onchange="renderDashboard()">
+              <option value="">All PS</option>
+              <option value="ps1">PS1 — Non-Conversion</option>
+              <option value="ps2">PS2 — No Booking</option>
+              <option value="ps3">PS3 — No-Show</option>
+              <option value="ps4">PS4 — OJT</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <button class="filter-clear" onclick="clearDashFilters()">✕ Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stat cards -->
+      <div class="stat-grid" id="dashStatGrid">
+        <div class="stat-card"><div class="stat-value" id="dStatAudits">—</div><div class="stat-label">Total Audits</div></div>
+        <div class="stat-card"><div class="stat-value" id="dStatManagers">—</div><div class="stat-label">Active Managers</div></div>
+        <div class="stat-card"><div class="stat-value" id="dStatBdas">—</div><div class="stat-label">BDAs Audited</div></div>
+        <div class="stat-card"><div class="stat-value" id="dStatThisWeek">—</div><div class="stat-label">This Week</div><div class="stat-sub" id="dStatWeekLabel"></div></div>
+      </div>
+
+      <!-- Charts row 1 -->
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">📈 Audit Trend Over Time</div>
+          <div class="chart-wrap"><canvas id="chartTrend"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">🥧 Audits by Problem Statement</div>
+          <div class="chart-wrap"><canvas id="chartPsBreakdown"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Training gap chart -->
+      <div class="chart-grid">
+        <div class="chart-card full-width">
+          <div class="chart-title">🧠 Training Gap Analysis — Parameter Scores by PS
+            <span style="font-size:.72rem;color:var(--text3);font-family:var(--font-body);font-weight:400;margin-left:.5rem">(AI-extracted scores 1–10 per parameter)</span>
+          </div>
+          <div id="trainingGapNote" style="font-size:.78rem;color:var(--text3);margin-bottom:.8rem;line-height:1.6;display:none"></div>
+          <div class="chart-wrap tall"><canvas id="chartTrainingGap"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Charts row 2 -->
+      <div class="chart-grid">
+        <div class="chart-card full-width">
+          <div class="chart-title">🏆 BDA Leaderboard — Audit Volume</div>
+          <div class="chart-wrap tall"><canvas id="chartBdaLeaderboard"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Manager usage table -->
+      <div class="card" style="padding:0;overflow:hidden;margin-top:1rem">
+        <div class="history-head"><span>👤 Manager Usage</span><span id="dashMgrCount" style="color:var(--text3);font-weight:400;font-size:.78rem"></span></div>
+        <table class="mgr-table" id="dashMgrTable">
+          <thead><tr><th>#</th><th>Manager Email</th><th>Audits Done</th><th>Last Active</th><th>Most Used PS</th></tr></thead>
+          <tbody id="dashMgrBody"><tr><td colspan="5" class="no-data">No data yet.</td></tr></tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- ══════════ TAB: SETUP GUIDE ══════════ -->
+    <div class="tab-panel" id="tab-setup">
+      <div class="card">
+        <div class="card-title"><span>📊</span> Google Sheets Setup — Step by Step</div>
+        <p style="font-size:.83rem;color:var(--text2);line-height:1.7;margin-bottom:1.4rem">Follow these steps once. After setup, every audit you run will be saved to your Google Sheet automatically — persistent across all sessions and accessible by your whole team.</p>
+
+        <div style="display:flex;flex-direction:column;gap:1.2rem">
+
+          <div style="display:flex;gap:1rem;align-items:flex-start">
+            <div style="background:var(--accent);color:#fff;font-weight:800;font-size:.8rem;min-width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.1rem">1</div>
+            <div>
+              <div style="font-weight:600;font-size:.88rem;color:var(--text);margin-bottom:.3rem">Create a new Google Sheet</div>
+              <div style="font-size:.8rem;color:var(--text2);line-height:1.65">Go to <a href="https://sheets.google.com" target="_blank" style="color:#7c9fff">sheets.google.com</a> and create a blank spreadsheet. Name it <strong style="color:var(--text)">Crio Audit Data</strong> or anything you like.</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:1rem;align-items:flex-start">
+            <div style="background:var(--accent);color:#fff;font-weight:800;font-size:.8rem;min-width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.1rem">2</div>
+            <div>
+              <div style="font-weight:600;font-size:.88rem;color:var(--text);margin-bottom:.3rem">Open Apps Script</div>
+              <div style="font-size:.8rem;color:var(--text2);line-height:1.65">In the sheet, click <strong style="color:var(--text)">Extensions → Apps Script</strong>. Delete any existing code in the editor.</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:1rem;align-items:flex-start">
+            <div style="background:var(--accent);color:#fff;font-weight:800;font-size:.8rem;min-width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.1rem">3</div>
+            <div>
+              <div style="font-weight:600;font-size:.88rem;color:var(--text);margin-bottom:.3rem">Paste this script</div>
+              <div style="font-size:.8rem;color:var(--text2);line-height:1.65;margin-bottom:.6rem">Copy the entire code below and paste it into the Apps Script editor:</div>
+              <div style="background:#060810;border:1px solid var(--border2);border-radius:8px;padding:1rem;font-family:'Courier New',monospace;font-size:.72rem;color:#a0c0e0;line-height:1.7;white-space:pre-wrap;overflow-x:auto">const SHEET_NAME = 'Audits';
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(SHEET_NAME);
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_NAME);
+      sheet.appendRow(['ID','Timestamp','BDA Email','Lead Email',
+        'Problem Statement','PS ID','Call Date','Audit Date',
+        'File Name','Manager Email','Audit Result']);
+      sheet.getRange(1,1,1,11).setFontWeight('bold')
+        .setBackground('#1a237e').setFontColor('#ffffff');
+    }
+    sheet.appendRow([
+      data.id, data.timestamp, data.bdaEmail, data.leadEmail,
+      data.psLabel, data.psId, data.callDate, data.auditDate,
+      data.fileName || '', data.managerEmail || '', data.result
+    ]);
+    return ContentService
+      .createTextOutput(JSON.stringify({success:true}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({success:false,error:err.message}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_NAME);
+    if (!sheet) return ContentService
+      .createTextOutput(JSON.stringify({audits:[]}))
+      .setMimeType(ContentService.MimeType.JSON);
+    const rows = sheet.getDataRange().getValues();
+    const headers = rows[0];
+    const audits = rows.slice(1).map(r => {
+      const obj = {};
+      headers.forEach((h,i) => obj[h] = r[i]);
+      return obj;
+    });
+    return ContentService
+      .createTextOutput(JSON.stringify({audits}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({audits:[],error:err.message}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:1rem;align-items:flex-start">
+            <div style="background:var(--accent);color:#fff;font-weight:800;font-size:.8rem;min-width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.1rem">4</div>
+            <div>
+              <div style="font-weight:600;font-size:.88rem;color:var(--text);margin-bottom:.3rem">Deploy as Web App</div>
+              <div style="font-size:.8rem;color:var(--text2);line-height:1.65">Click <strong style="color:var(--text)">Deploy → New deployment</strong>. Set type to <strong style="color:var(--text)">Web app</strong>. Set <strong style="color:var(--text)">Execute as: Me</strong> and <strong style="color:var(--text)">Who has access: Anyone</strong>. Click Deploy and authorise when asked.</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:1rem;align-items:flex-start">
+            <div style="background:var(--accent);color:#fff;font-weight:800;font-size:.8rem;min-width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.1rem">5</div>
+            <div>
+              <div style="font-weight:600;font-size:.88rem;color:var(--text);margin-bottom:.3rem">Copy the Web App URL</div>
+              <div style="font-size:.8rem;color:var(--text2);line-height:1.65">After deploying, copy the URL that looks like <strong style="color:var(--text)">https://script.google.com/macros/s/.../exec</strong></div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:1rem;align-items:flex-start">
+            <div style="background:var(--accent);color:#fff;font-weight:800;font-size:.8rem;min-width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.1rem">6</div>
+            <div>
+              <div style="font-weight:600;font-size:.88rem;color:var(--text);margin-bottom:.3rem">Enter the URL here</div>
+              <div style="font-size:.8rem;color:var(--text2);line-height:1.65;margin-bottom:.6rem">Paste it below to connect this session. To make it permanent, paste it into the login screen next time you open the tool.</div>
+              <div style="display:flex;gap:.5rem">
+                <input id="sheetsUrlInput" type="text" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1;background:var(--input-bg);border:1px solid var(--border2);border-radius:7px;color:var(--text);padding:.6rem .85rem;font-size:.8rem;font-family:var(--font-body)"/>
+                <button onclick="connectSheets()" style="background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:7px;color:#fff;padding:.6rem 1rem;font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap">Connect</button>
+              </div>
+              <div id="sheetsConnectMsg" style="font-size:.75rem;margin-top:.4rem;display:none"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SAVE INDICATOR -->
+<div class="save-indicator" id="saveIndicator">
+  <span id="saveIndicatorIcon">💾</span>
+  <span id="saveIndicatorMsg">Saving to Sheets...</span>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  HARDCODED CONFIG — only admin edits these two lines
+// ════════════════════════════════════════════════════════
+const GEMINI_API_KEY = 'AIzaSyBne5naOFRWlSwcVCPMhmGkgTRfDI6W7r0';
+const SHEETS_URL     = 'https://script.google.com/macros/s/AKfycbzSVEDaJw84olAsECteDWjxmVKev4Ekt67A6ZPDzAubpje4ssA3FV7B0_0RA0nJe2GGOQ/exec';
+
+// ════════════════════════════════════════════════════════
+//  AUTH CONFIG
+// ════════════════════════════════════════════════════════
+const ADMIN_PASSWORD   = 'Crio@2024';          // ← change this to your preferred password
+const ALLOWED_DOMAINS  = ['criodo.co.in', 'criodo.com'];  // ← allowed email domains
+
+// ════════════════════════════════════════════════════════
+//  SIMPLE HELPERS
+// ════════════════════════════════════════════════════════
+function _rmKey(k) { return 'crioaudit_' + k; }
+function setRemembered(k, v) { try { localStorage.setItem(_rmKey(k), btoa(unescape(encodeURIComponent(v)))); } catch(e){} }
+function getRemembered(k) { try { const v=localStorage.getItem(_rmKey(k)); return v ? decodeURIComponent(escape(atob(v))) : ''; } catch(e){ return ''; } }
+
+// ════════════════════════════════════════════════════════
+//  UNLOCK
+// ════════════════════════════════════════════════════════
+function unlockTool() {
+  const email    = (document.getElementById('gateUserId')?.value || '').trim().toLowerCase();
+  const password = document.getElementById('gatePassword')?.value || '';
+  const errEl    = document.getElementById('gateErr');
+  errEl.style.display = 'none';
+
+  // Validate email present
+  if (!email) { showGateErr('Please enter your email ID.'); return; }
+
+  // Validate domain
+  const domain = email.split('@')[1] || '';
+  if (!ALLOWED_DOMAINS.includes(domain)) {
+    showGateErr('Access denied. Only @criodo.co.in and @criodo.com accounts are allowed.');
+    return;
+  }
+
+  // Validate password
+  if (password !== ADMIN_PASSWORD) {
+    showGateErr('Incorrect password. Please try again.');
+    return;
+  }
+
+  // All good — store identity and open app
+  const user = { email, name: email.split('@')[0], picture: '' };
+  currentUser = user;
+  setRemembered('_cu', JSON.stringify(user));
+
+  sessionStorage.setItem('_ga', '1');
+  sessionStorage.setItem('_gk', GEMINI_API_KEY);
+  if (SHEETS_URL) sessionStorage.setItem('_su', SHEETS_URL);
+
+  document.getElementById('adminGate').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  initApp();
+  showUserPill();
+}
+
+function showGateErr(msg) {
+  const el = document.getElementById('gateErr');
+  if (el) { el.style.display = 'block'; el.textContent = msg; }
+}
+
+function logoutUser(e) {
+  if (e) e.stopPropagation();
+  // Clear auth flag and identity — but NEVER clear API key or Sheets URL
+  currentUser = null;
+  try { localStorage.removeItem(_rmKey('_cu')); } catch(err) {}
+  sessionStorage.removeItem('_ga');
+  const theme = sessionStorage.getItem('_theme');
+  sessionStorage.clear();
+  if (theme) sessionStorage.setItem('_theme', theme);
+  location.reload();
+}
+
+function resetSession() {
+  if (confirm('Lock the tool and sign out?')) { logoutUser(null); }
+}
+
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light');
+  const btn = document.getElementById('themeBtn');
+  if (btn) btn.textContent = isLight ? '🌙 Dark' : '☀️ Light';
+  sessionStorage.setItem('_theme', isLight ? 'light' : 'dark');
+}
+
+(function() {
+  if (sessionStorage.getItem('_theme') === 'dark') {
+    document.body.classList.remove('light');
+    window.addEventListener('DOMContentLoaded', () => {
+      const b = document.getElementById('themeBtn');
+      if (b) b.textContent = '☀️ Light';
+    });
+  }
+})();
+
+function toggleUserDropdown(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('userDropdown');
+  dd.classList.toggle('open');
+}
+
+document.addEventListener('click', () => {
+  const dd = document.getElementById('userDropdown');
+  if (dd) dd.classList.remove('open');
+});
+
+function getManagerEmail() {
+  if (currentUser && currentUser.email) return currentUser.email;
+  try {
+    const saved = getRemembered('_cu');
+    if (saved) return JSON.parse(saved).email || '';
+  } catch(e) {}
+  return '';
+}
+
+function isAdmin() {
+  return (currentUser?.email || '').toLowerCase() === 'shiva@criodo.co.in';
+}
+
+function applyRoleVisibility() {
+  const admin = isAdmin();
+  // Setup Guide tab — admin only
+  const setupBtn = document.getElementById('tabBtnSetup');
+  const setupPanel = document.getElementById('tab-setup');
+  if (setupBtn)  setupBtn.style.display  = admin ? '' : 'none';
+  if (setupPanel && !admin) setupPanel.style.display = 'none';
+
+  // Dashboard tab — visible to all users (data is scoped by allAudits())
+  // No restriction needed here
+
+  // Sheets badge — admin only
+  const sheetsBadge = document.getElementById('sheetsBadge');
+  if (sheetsBadge && admin && sessionStorage.getItem('_su')) sheetsBadge.style.display = 'flex';
+
+  // Reset button — admin only
+  const resetBtn = document.getElementById('resetBtn');
+  if (resetBtn) resetBtn.style.display = admin ? '' : 'none';
+
+  // API badge — admin only
+  const apiBadge = document.getElementById('apiBadge');
+  if (apiBadge) apiBadge.style.display = admin ? '' : 'none';
+}
+
+function showUserPill() {
+  if (!currentUser) return;
+  const pill = document.getElementById('userPill');
+  if (pill) { pill.style.display = 'flex'; pill.style.visibility = 'visible'; }
+  const nameEl = document.getElementById('userPillName');
+  // Show first part of email (before @) capitalised
+  const displayName = currentUser.email.split('@')[0];
+  if (nameEl) nameEl.textContent = displayName;
+  const emailEl = document.getElementById('userDropdownEmail');
+  if (emailEl) emailEl.textContent = currentUser.email;
+  // Show/hide admin-only tabs
+  applyRoleVisibility();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Restore theme
+  if (sessionStorage.getItem('_theme') === 'dark') {
+    document.body.classList.remove('light');
+    const b = document.getElementById('themeBtn');
+    if (b) b.textContent = '☀️ Light';
+  }
+
+  // Always push hardcoded credentials into session on every page load
+  sessionStorage.setItem('_gk', GEMINI_API_KEY);
+  if (SHEETS_URL) sessionStorage.setItem('_su', SHEETS_URL);
+
+  // Restore user identity from localStorage
+  try {
+    const saved = getRemembered('_cu');
+    if (saved) currentUser = JSON.parse(saved);
+  } catch(e) {}
+
+  // Auto-resume if session still active (tab refresh, not full close)
+  if (sessionStorage.getItem('_ga') === '1' && currentUser) {
+    document.getElementById('adminGate').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    initApp();
+    showUserPill();
+  }
+
+  // Wire up summary dropdowns
+  const bSel = document.getElementById('summBdaSelect');
+  const pSel = document.getElementById('summPsSelect');
+  if (bSel) bSel.addEventListener('change', onSummBdaChange);
+  if (pSel) pSel.addEventListener('change', onSummBdaChange);
+});
+
+// ════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════
+let currentUser = null;  // { email, name } — set on login
+let audioFileData = null;
+let currentAudit = null;
+let currentSummary = null;
+let auditHistory = [];   // session audits
+let sheetsAudits = [];   // audits loaded from Sheets
+
+function getSheetsUrl() { return sessionStorage.getItem('_su') || SHEETS_URL || ''; }
+
+// ════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════
+function initApp() {
+  document.getElementById('auditDate').value = new Date().toISOString().split('T')[0];
+  const zone = document.getElementById('fileZone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('dragover'); if(e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); });
+
+  if (getSheetsUrl()) {
+    document.getElementById('sheetsBadge').style.display = 'flex';
+    loadFromSheets();
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  TABS
+// ════════════════════════════════════════════════════════
+// switchTab defined at bottom of script
+
+// ════════════════════════════════════════════════════════
+//  GOOGLE SHEETS
+// ════════════════════════════════════════════════════════
+async function saveToSheets(entry) {
+  const url = getSheetsUrl();
+  if (!url) return;
+  showSaveIndicator('saving');
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry),
+      mode: 'no-cors'
+    });
+    showSaveIndicator('success');
+  } catch(e) {
+    showSaveIndicator('error');
+  }
+}
+
+async function loadFromSheets() {
+  const url = getSheetsUrl();
+  if (!url) return;
+  try {
+    const r = await fetch(url + '?action=get', { mode: 'cors' });
+    const d = await r.json();
+    if (d.audits && d.audits.length) {
+      sheetsAudits = d.audits.map(row => ({
+        id: row['ID'] || Date.now(),
+        timestamp: row['Timestamp'] || '',
+        bdaEmail: row['BDA Email'] || '',
+        leadEmail: row['Lead Email'] || '',
+        psLabel: row['Problem Statement'] || '',
+        psId: row['PS ID'] || '',
+        callDate: row['Call Date'] || '',
+        auditDate: row['Audit Date'] || '',
+        fileName: row['File Name'] || '',
+        result: row['Audit Result'] || '',
+        managerEmail: row['Manager Email'] || ''
+      }));
+      renderHistory();
+      refreshBdaList();
+    }
+  } catch(e) {
+    // Sheets not reachable — session-only mode
+  }
+}
+
+function connectSheets() {
+  const url = document.getElementById('sheetsUrlInput').value.trim();
+  const msg = document.getElementById('sheetsConnectMsg');
+  if (!url || !url.includes('script.google.com')) {
+    msg.style.display = 'block'; msg.style.color = 'var(--red)';
+    msg.textContent = 'Please paste a valid Google Apps Script URL.'; return;
+  }
+  sessionStorage.setItem('_su', url);
+  document.getElementById('sheetsBadge').style.display = 'flex';
+  msg.style.display = 'block'; msg.style.color = 'var(--green)';
+  msg.textContent = '✓ Connected! Audits will now be saved to your Google Sheet.';
+  loadFromSheets();
+}
+
+function showSaveIndicator(state) {
+  const el = document.getElementById('saveIndicator');
+  const msg = document.getElementById('saveIndicatorMsg');
+  const icon = document.getElementById('saveIndicatorIcon');
+  el.className = 'save-indicator visible';
+  if (state === 'saving') { icon.textContent='💾'; msg.textContent='Saving to Sheets...'; }
+  else if (state === 'success') { el.classList.add('success'); icon.textContent='✓'; msg.textContent='Saved to Google Sheets'; }
+  else { el.classList.add('error'); icon.textContent='⚠'; msg.textContent='Sheets save failed — stored locally'; }
+  setTimeout(() => el.className = 'save-indicator', 3000);
+}
+
+// ════════════════════════════════════════════════════════
+//  FILE HANDLING
+// ════════════════════════════════════════════════════════
+function handleFile(input) { if (input.files[0]) setFile(input.files[0]); }
+function setFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    audioFileData = { base64: reader.result.split(',')[1], mimeType: file.type||'audio/mpeg', name: file.name };
+    document.getElementById('fileZone').classList.add('selected');
+    document.getElementById('fzText').textContent = '✓ ' + file.name;
+    clearError();
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetFileZone() {
+  audioFileData = null;
+  const zone = document.getElementById('fileZone');
+  zone.classList.remove('selected','dragover');
+  document.getElementById('fzText').textContent = 'Upload new file for next audit';
+  document.getElementById('fzSub').textContent = 'Previous recording cleared — click or drag to upload';
+  document.getElementById('fzIcon').textContent = '📂';
+  document.getElementById('audioFile').value = '';
+}
+
+// ════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════
+function showError(msg) { const b=document.getElementById('errorBox'); b.style.display='flex'; document.getElementById('errorMsg').textContent=msg; }
+function clearError() { document.getElementById('errorBox').style.display='none'; }
+function setStatus(msg) { const b=document.getElementById('statusBar'); if(msg){b.style.display='flex';document.getElementById('statusMsg').textContent=msg;}else{b.style.display='none';} }
+function setSummStatus(msg) { const b=document.getElementById('summStatusBar'); if(msg){b.style.display='flex';document.getElementById('summStatusMsg').textContent=msg;}else{b.style.display='none';} }
+function validate() {
+  if (!document.getElementById('problemStatement').value) return 'Please select a Problem Statement.';
+  if (!document.getElementById('leadEmail').value) return 'Please enter Lead Email.';
+  if (!document.getElementById('bdaEmail').value) return 'Please enter BDA Email.';
+  if (!document.getElementById('callDate').value) return 'Please enter Date of Call.';
+  if (!audioFileData) return 'Please upload a call recording audio file.';
+  return '';
+}
+function allAudits() {
+  const merged = [...auditHistory, ...sheetsAudits.filter(s => !auditHistory.find(a => String(a.id)===String(s.id)))];
+  // Admin sees everything; regular users see only their own audits
+  if (isAdmin()) return merged;
+  const me = (currentUser?.email || '').toLowerCase();
+  return merged.filter(a => (a.managerEmail||'').toLowerCase() === me);
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ════════════════════════════════════════════════════════
+//  RUN AUDIT
+// ════════════════════════════════════════════════════════
+async function runAudit() {
+  clearError();
+  const err = validate(); if (err) { showError(err); return; }
+  const geminiKey = sessionStorage.getItem('_gk') || GEMINI_API_KEY;
+  if (!geminiKey) { showError('Session expired. Please sign in again.'); return; }
+
+  const psId = document.getElementById('problemStatement').value;
+  const psLabel = document.querySelector('#problemStatement option[value="'+psId+'"]').textContent;
+  const leadEmail = document.getElementById('leadEmail').value.trim();
+  const bdaEmail = document.getElementById('bdaEmail').value.trim();
+  const callDate = document.getElementById('callDate').value;
+  const auditDate = document.getElementById('auditDate').value;
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-w"></span> Auditing Call...';
+  document.getElementById('resultCard').style.display = 'none';
+  setStatus('Sending audio to Gemini 2.5 Flash...');
+
+  try {
+    const body = {
+      contents: [{ parts: [
+        { inline_data: { mime_type: audioFileData.mimeType, data: audioFileData.base64 } },
+        { text: PS_PROMPTS[psId] + '\n\n---\nCall Metadata:\n- BDA Email: ' + bdaEmail + '\n- Lead Email: ' + leadEmail + '\n- Date of Call: ' + callDate + '\n\nListen to the full audio. Produce ALL 10 sections completely. Do not stop, skip, or truncate any section. Write every section in full detail. Reference actual words and moments from the call.\n\nSCORING RULES — MANDATORY:\n- At the END of sections 1, 2, 3, 4, 5, 6, 7, and 8 — you MUST include a score line in EXACTLY this format:\nScore: X/10\n- The score must reflect actual performance observed in the call for that parameter.\n- Do NOT include a score for sections 9 or 10.\n- Scores must be integers from 1 to 10.\n\nFORMATTING RULES — follow strictly:\n- Section headers must be: "1. SECTION TITLE" format (number + dot + ALL CAPS title)\n- Use "- " (dash space) for all bullet points\n- Use "1. 2. 3." for any numbered sub-points within a section\n- Do NOT use asterisks (*) anywhere — no bold markdown, no italic markdown\n- Do NOT use # headers\n- Write label + colon for key observations, e.g. "Fear Signal: the lead mentioned..."\n- Keep formatting clean and consistent throughout' }
+      ]}],
+      generationConfig: { temperature: 0.3, maxOutputTokens: 65536 }
+    };
+
+    setStatus('Gemini is listening to the call recording...');
+    const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+geminiKey, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    if (!resp.ok) { const ed=await resp.json(); throw new Error(ed?.error?.message||'Gemini API error '+resp.status); }
+    const data = await resp.json();
+    const resultText = data?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('')||'No response generated.';
+
+    const entry = { id:Date.now(), psId, psLabel, leadEmail, bdaEmail, callDate, auditDate, fileName:audioFileData.name, result:resultText, timestamp:new Date().toLocaleString('en-IN'), managerEmail:getManagerEmail() };
+    currentAudit = entry;
+    auditHistory.unshift(entry);
+    setStatus('');
+    renderResult(entry);
+    renderHistory();
+    updateHistoryBadge();
+    saveToSheets(entry);
+    resetFileZone();
+    setTimeout(() => document.getElementById('resultCard').scrollIntoView({behavior:'smooth'}), 100);
+  } catch(e) {
+    setStatus('');
+    showError('Error: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '▶&nbsp; Run Audit';
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  RENDER RESULT (rich formatting)
+// ════════════════════════════════════════════════════════
+function cleanText(t) { return t.replace(/\*+/g,'').trim(); }
+
+function makeBoldSpans(txt) {
+  const clean = cleanText(txt);
+  const ci = clean.indexOf(':');
+  if (ci > 0 && ci < 60 && ci < clean.length-1) {
+    const s = document.createElement('span');
+    const b = document.createElement('strong'); b.className='r-bold'; b.textContent=clean.substring(0,ci+1);
+    s.appendChild(b); s.appendChild(document.createTextNode(clean.substring(ci+1)));
+    return s;
+  }
+  return document.createTextNode(clean);
+}
+
+function renderLines(result, container) {
+  container.innerHTML = '';
+  let nc = 0;
+  result.split('\n').forEach(line => {
+    const t = line.trim();
+    const clean = t.replace(/\*+/g,'').trim();
+    if (!clean) { const d=document.createElement('div'); d.className='r-gap'; container.appendChild(d); return; }
+    if (/^\d{1,2}\.\s+[A-Z]/.test(clean) || /^[A-Z][A-Z\s&\/–—()+]{5,}$/.test(clean)) {
+      nc = 0;
+      const d=document.createElement('div'); d.className='r-section';
+      const m=clean.match(/^(\d{1,2})\./);
+      if (m) { const badge=document.createElement('span'); badge.className='r-section-num'; badge.textContent=m[1]; d.appendChild(badge); const lbl=document.createElement('span'); lbl.textContent=clean.replace(/^\d{1,2}\.\s*/,''); d.appendChild(lbl); }
+      else d.textContent=clean;
+      container.appendChild(d); return;
+    }
+    if (/^[-•]\s/.test(clean)) {
+      const d=document.createElement('div'); d.className='r-bullet';
+      const dot=document.createElement('span'); dot.className='r-bullet-dot'; d.appendChild(dot);
+      const sp=document.createElement('span'); sp.appendChild(makeBoldSpans(clean.replace(/^[-•]\s+/,''))); d.appendChild(sp);
+      container.appendChild(d); return;
+    }
+    if (/^\d{1,2}\.\s+\S/.test(clean) && !/^[1-9]\d*\.\s+[A-Z]{3,}/.test(clean)) {
+      nc++;
+      const d=document.createElement('div'); d.className='r-numbered';
+      const badge=document.createElement('span'); badge.className='r-num-badge';
+      const m2=clean.match(/^(\d{1,2})\./); badge.textContent=m2?m2[1]:nc; d.appendChild(badge);
+      const sp=document.createElement('span'); sp.appendChild(makeBoldSpans(clean.replace(/^\d{1,2}\.\s*/,''))); d.appendChild(sp);
+      container.appendChild(d); return;
+    }
+    // Score line: "Score: X/10"
+    const scoreMatch = clean.match(/^Score:\s*(\d+)\s*\/\s*10/i);
+    if (scoreMatch) {
+      const score = parseInt(scoreMatch[1]);
+      const pct = (score/10)*100;
+      const cls = score >= 7 ? 'high' : score >= 4 ? 'mid' : 'low';
+      const d = document.createElement('div'); d.className = 'r-score';
+      d.innerHTML =
+        '<span style="color:var(--text3);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em">Score</span>' +
+        '<span class="r-score-num score-'+cls+'">'+score+'<span style="font-size:.72rem;font-weight:400;color:var(--text3)">/10</span></span>' +
+        '<span class="r-score-bar"><span class="r-score-fill score-fill-'+cls+'" style="width:'+pct+'%"></span></span>';
+      container.appendChild(d);
+      return;
+    }
+    const d=document.createElement('div'); d.className='r-text'; d.appendChild(makeBoldSpans(clean)); container.appendChild(d);
+  });
+}
+
+function renderResult(entry) {
+  document.getElementById('resultCard').style.display = 'block';
+  document.getElementById('resultMeta').textContent = entry.bdaEmail + '  ·  Lead: ' + entry.leadEmail + '  ·  ' + entry.callDate + '  ·  ' + entry.psLabel;
+  renderLines(entry.result, document.getElementById('resultBody'));
+}
+
+// viewAudit handled in renderHistoryRows section
+
+// ════════════════════════════════════════════════════════
+//  HISTORY
+// ════════════════════════════════════════════════════════
+const PS_SHORT = { ps1:'Non-Conv.', ps2:'No Booking', ps3:'No-Show', ps4:'OJT' };
+const managerNotes = {};
+
+function updateHistoryBadge() { /* badge removed */ }
+
+function applyFilters() {
+  const bda = (document.getElementById('filterBda')?.value||'').toLowerCase();
+  const lead = (document.getElementById('filterLead')?.value||'').toLowerCase();
+  const ps = document.getElementById('filterPs')?.value||'';
+  const from = document.getElementById('filterDateFrom')?.value||'';
+  const to = document.getElementById('filterDateTo')?.value||'';
+  const all = allAudits().filter(a => {
+    if (bda && !a.bdaEmail.toLowerCase().includes(bda)) return false;
+    if (lead && !a.leadEmail.toLowerCase().includes(lead)) return false;
+    if (ps && a.psId !== ps) return false;
+    if (from && a.callDate < from) return false;
+    if (to && a.callDate > to) return false;
+    return true;
+  });
+  renderHistoryRows(all);
+}
+
+function clearFilters() {
+  ['filterBda','filterLead','filterPs','filterDateFrom','filterDateTo'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value='';
+  });
+  renderHistory();
+}
+
+function toggleNotes(id) {
+  const panel = document.getElementById('notes-'+id);
+  if (!panel) return;
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) panel.querySelector('textarea').focus();
+}
+
+function saveNote(id) {
+  const ta = document.getElementById('noteta-'+id);
+  if (!ta) return;
+  managerNotes[id] = ta.value;
+  const tag = document.getElementById('notesaved-'+id);
+  if (tag) { tag.style.display='flex'; setTimeout(()=>tag.style.display='none', 2000); }
+  try { localStorage.setItem('crio_notes_'+id, ta.value); } catch(e){}
+}
+
+function loadNote(id) {
+  if (managerNotes[String(id)] !== undefined) return managerNotes[String(id)];
+  try { return localStorage.getItem('crio_notes_'+id)||''; } catch(e){ return ''; }
+}
+
+function renderHistoryRows(list) {
+  const rows = document.getElementById('historyRows');
+  rows.innerHTML = '';
+  if (!list.length) {
+    rows.innerHTML='<div style="padding:2rem;text-align:center;color:var(--text3);font-size:.83rem">No audits match the current filters.</div>';
+    return;
+  }
+  list.forEach(a => {
+    const savedNote = loadNote(a.id);
+    const hasNote = savedNote && savedNote.trim().length > 0;
+    const noteStyle = hasNote ? 'color:var(--green);border-color:rgba(52,211,153,.3)' : '';
+    const row = document.createElement('div');
+    row.className = 'history-row';
+    const id = a.id;
+    row.innerHTML =
+      '<div class="c-primary" title="'+esc(a.bdaEmail)+'">'+esc(a.bdaEmail)+'</div>'+
+      '<div class="c-sec" title="'+esc(a.leadEmail)+'">'+esc(a.leadEmail)+'</div>'+
+      '<div class="c-sec">'+esc(a.callDate||'—')+'</div>'+
+      '<div class="c-sec">'+esc(a.auditDate||'—')+'</div>'+
+      '<div><span class="ps-badge">'+(PS_SHORT[a.psId]||a.psId||'—')+'</span></div>'+
+      '<div class="row-actions">'+
+        '<button class="btn-ghost" onclick="viewAudit(this)" data-id="'+id+'">View</button>'+
+        '<button class="btn-ghost" title="Manager notes" style="'+noteStyle+'" onclick="toggleNotes(this)" data-id="'+id+'">📝</button>'+
+        '<button class="btn-dl" onclick="dlDocByEl(this)" data-id="'+id+'">DOC</button>'+
+        '<button class="btn-dl" onclick="dlExcelByEl(this)" data-id="'+id+'">XLS</button>'+
+      '</div>'+
+      '<div class="notes-panel'+(hasNote?' open':'')+'" id="notes-'+id+'">'+
+        '<div style="font-size:.68rem;color:var(--text3);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.08em;font-weight:600">📝 Manager Notes</div>'+
+        '<textarea id="noteta-'+id+'" placeholder="Add coaching notes, observations, follow-up actions...">'+esc(savedNote)+'</textarea>'+
+        '<div class="notes-save-row">'+
+          '<div class="notes-saved-tag" id="notesaved-'+id+'"><span>✓</span> Saved</div>'+
+          '<button class="btn-ghost" onclick="saveNoteEl(this)" data-id="'+id+'">Save Note</button>'+
+        '</div>'+
+      '</div>';
+    rows.appendChild(row);
+  });
+}
+
+function viewAudit(el) { const id = el ? el.dataset.id : arguments[0]; const e=allAudits().find(a=>String(a.id)===String(id)); if(!e) return; currentAudit=e; document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.getElementById('tab-audit').classList.add('active'); document.querySelector('.tab-btn').classList.add('active'); renderResult(e); setTimeout(()=>document.getElementById('resultCard').scrollIntoView({behavior:'smooth'}),100); }
+function toggleNotes(el) { const id = el ? el.dataset.id : arguments[0]; const panel=document.getElementById('notes-'+id); if(!panel) return; panel.classList.toggle('open'); if(panel.classList.contains('open')) panel.querySelector('textarea').focus(); }
+function saveNoteEl(el) { const id = el ? el.dataset.id : arguments[0]; saveNote(id); }
+function dlDocByEl(el) { const id = el ? el.dataset.id : arguments[0]; const a=allAudits().find(x=>String(x.id)===String(id)); if(a) _dlDoc(a); }
+function dlExcelByEl(el) { const id = el ? el.dataset.id : arguments[0]; const a=allAudits().find(x=>String(x.id)===String(id)); if(a) _dlExcel(a); }
+
+
+function renderHistory() {
+  const all = allAudits();
+  const label = isAdmin() ? all.length + ' audit' + (all.length!==1?'s':'') : all.length + ' audit' + (all.length!==1?'s':'')+' (your audits)';
+  document.getElementById('historyCount').textContent = label;
+  applyFilters();
+  updateHistoryBadge();
+}
+
+// ════════════════════════════════════════════════════════
+//  BDA SUMMARY
+// ════════════════════════════════════════════════════════
+function refreshBdaList() {
+  const all = allAudits();
+  // Populate BDA dropdown
+  const sel = document.getElementById('summBdaSelect');
+  const prev = sel.value;
+  const bdas = [...new Set(all.map(a=>a.bdaEmail).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Select BDA...</option>' + bdas.map(b=>'<option value="'+esc(b)+'"'+(b===prev?' selected':'')+'>'+esc(b)+'</option>').join('');
+
+  // Render BDA list card
+  if (!bdas.length) { document.getElementById('bdaListCard').style.display='none'; return; }
+  document.getElementById('bdaListCard').style.display='block';
+  document.getElementById('bdaListCount').textContent = bdas.length + ' BDA' + (bdas.length!==1?'s':'');
+  const listRows = document.getElementById('bdaListRows');
+  listRows.innerHTML = '';
+  bdas.forEach(bda => {
+    const audits = all.filter(a=>a.bdaEmail===bda);
+    const psCounts = {};
+    audits.forEach(a => { psCounts[a.psId] = (psCounts[a.psId]||0)+1; });
+    const psStr = Object.entries(psCounts).map(([k,v])=>'<span class="ps-badge" style="margin-right:3px">'+(PS_SHORT[k]||k)+' x'+v+'</span>').join('');
+    const row=document.createElement('div'); row.className='bda-row';
+    row.innerHTML='<div class="c-primary">'+esc(bda)+'</div><div>'+psStr+'</div><div class="bda-col-hide"><span class="audit-count-badge">'+audits.length+' audit'+(audits.length!==1?'s':'')+'</span></div><div><button class="btn-ghost" onclick="prefillSummary(\''+esc(bda)+'\')">Summarise</button></div>';
+    listRows.appendChild(row);
+  });
+}
+
+function prefillSummary(bda) {
+  document.getElementById('summBdaSelect').value = bda;
+  onSummBdaChange();
+}
+
+function onSummBdaChange() {
+  updateSummPreview();
+}
+
+// summary dropdown listeners wired in main DOMContentLoaded
+
+function updateSummPreview() {
+  const bda = document.getElementById('summBdaSelect').value;
+  const ps = document.getElementById('summPsSelect').value;
+  if (!bda || !ps) { document.getElementById('summAuditPreview').style.display='none'; return; }
+  const matching = allAudits().filter(a=>a.bdaEmail===bda && a.psId===ps);
+  const preview = document.getElementById('summAuditPreview');
+  const list = document.getElementById('summPreviewList');
+  if (!matching.length) { preview.style.display='none'; return; }
+  preview.style.display='block';
+  list.innerHTML = matching.map(a=>'<span style="background:rgba(79,110,247,.1);border:1px solid rgba(79,110,247,.2);border-radius:5px;padding:.18rem .55rem;font-size:.72rem;color:#7c9fff">'+esc(a.leadEmail)+' ('+esc(a.callDate)+')</span>').join('');
+}
+
+async function runSummary() {
+  const bda = document.getElementById('summBdaSelect').value;
+  const ps = document.getElementById('summPsSelect').value;
+  const psLabel = document.querySelector('#summPsSelect option[value="'+ps+'"]')?.textContent || ps;
+  if (!bda) { alert('Please select a BDA.'); return; }
+  if (!ps) { alert('Please select a Problem Statement.'); return; }
+
+  const matching = allAudits().filter(a=>a.bdaEmail===bda && a.psId===ps);
+  if (!matching.length) { alert('No audits found for this BDA and Problem Statement. Run some audits first.'); return; }
+
+  const geminiKey = sessionStorage.getItem('_gk') || GEMINI_API_KEY;
+  if (!geminiKey) { alert('Session expired. Please sign in again.'); return; }
+
+  const btn = document.getElementById('summBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner-w"></span> Generating...';
+  document.getElementById('summResultCard').style.display = 'none';
+  setSummStatus('Analysing ' + matching.length + ' audit' + (matching.length!==1?'s':'') + ' for ' + bda + '...');
+
+  // Build audit summaries text
+  const auditTexts = matching.map((a,i) => '=== AUDIT ' + (i+1) + ' ===\nLead: ' + a.leadEmail + '\nDate of Call: ' + a.callDate + '\n\n' + a.result).join('\n\n');
+
+  const prompt = `You are a Senior Sales Quality Manager at Crio.Do reviewing multiple call audits for a single BDA.
+
+BDA: ${bda}
+Problem Statement: ${psLabel}
+Total Audits Reviewed: ${matching.length}
+Audit Dates: ${matching.map(a=>a.callDate).join(', ')}
+
+Below are the individual audit reports for this BDA across ${matching.length} call(s):
+
+${auditTexts}
+
+---
+
+Based on ALL the above audits, produce a comprehensive BDA Summary Report with these exact sections:
+
+1. BDA OVERVIEW
+- BDA name/email, total calls reviewed, problem statement focus, date range of audits
+
+2. RECURRING PATTERNS & CONSISTENT MISTAKES
+- What mistakes appear across multiple calls? (cite which calls)
+- What behaviours are consistently weak?
+- What is this BDA systematically getting wrong?
+
+3. STRENGTHS & POSITIVE PATTERNS
+- What is the BDA consistently doing well across calls?
+- Any improvements visible from earlier to later calls?
+
+4. PARAMETER-BY-PARAMETER BREAKDOWN
+- Rate each of the 10 audit parameters across all calls: Strong / Developing / Weak
+- One sentence of evidence per parameter
+
+5. ROOT CAUSE ANALYSIS
+- What is the single biggest reason this BDA is struggling?
+- Is it knowledge, confidence, process, or mindset?
+- What is the core unlock needed?
+
+6. COACHING ACTION PLAN (Priority Order)
+- 3 to 5 specific, actionable coaching interventions
+- For each: what to coach, how to coach it, and what good looks like
+- Prioritise by impact
+
+7. CALL-BY-CALL COMPARISON
+- Brief comparison across all audits showing progression or regression
+- Did the BDA improve, plateau, or regress across calls?
+
+8. RECOMMENDED NEXT STEPS
+- What should the manager do in the next 1-on-1?
+- What role-plays or practice exercises should the BDA do?
+- What should be tracked in the next 5 calls?
+
+FORMATTING RULES:
+- Section headers: "1. SECTION TITLE" format (number + dot + ALL CAPS)
+- Bullets: use "- " (dash space)
+- Numbered points: use "1. 2. 3." format
+- No asterisks (*) anywhere
+- No # headers
+- Label + colon for key observations, e.g. "Root Cause: ..."
+- Be specific — reference actual call details, not generic advice`;
+
+  try {
+    const body = {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.3, maxOutputTokens: 65536 }
+    };
+    const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+geminiKey, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    if (!resp.ok) { const ed=await resp.json(); throw new Error(ed?.error?.message||'Gemini error'); }
+    const data = await resp.json();
+    const resultText = data?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('')||'No summary generated.';
+
+    currentSummary = { bda, ps, psLabel, auditCount: matching.length, audits: matching, result: resultText, timestamp: new Date().toLocaleString('en-IN') };
+    setSummStatus('');
+    document.getElementById('summResultCard').style.display = 'block';
+    document.getElementById('summResultMeta').textContent = bda + '  ·  ' + psLabel + '  ·  ' + matching.length + ' audits  ·  Generated ' + currentSummary.timestamp;
+    renderLines(resultText, document.getElementById('summResultBody'));
+    setTimeout(() => document.getElementById('summResultCard').scrollIntoView({behavior:'smooth'}), 100);
+  } catch(e) {
+    setSummStatus('');
+    alert('Error generating summary: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.innerHTML = '<span>✦</span> Summarise';
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  DOWNLOADS
+// ════════════════════════════════════════════════════════
+function fmtText(a) {
+  return 'CRIO.DO AI CALL AUDIT REPORT\n'+'='.repeat(44)+'\nProblem Statement : '+a.psLabel+'\nBDA Email         : '+a.bdaEmail+'\nLead Email        : '+a.leadEmail+'\nDate of Call      : '+a.callDate+'\nDate of Audit     : '+a.auditDate+'\nRecording File    : '+(a.fileName||'N/A')+'\nAudited At        : '+a.timestamp+'\n\n'+'='.repeat(44)+'\nAUDIT FINDINGS\n'+'='.repeat(44)+'\n\n'+a.result;
+}
+function fmtSummText(s) {
+  return 'CRIO.DO BDA SUMMARY REPORT\n'+'='.repeat(44)+'\nBDA Email         : '+s.bda+'\nProblem Statement : '+s.psLabel+'\nAudits Reviewed   : '+s.auditCount+'\nGenerated At      : '+s.timestamp+'\nCalls Covered     : '+s.audits.map(a=>a.leadEmail+' ('+a.callDate+')').join(', ')+'\n\n'+'='.repeat(44)+'\nSUMMARY\n'+'='.repeat(44)+'\n\n'+s.result;
+}
+function saveBlob(content, name, type) {
+  const b=new Blob([content],{type}); const u=URL.createObjectURL(b);
+  const a=document.createElement('a'); a.href=u; a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(u),1000);
+}
+function dlDoc() { if(currentAudit) _dlDoc(currentAudit); }
+function dlDocById(id) { const a=allAudits().find(x=>String(x.id)===String(id)); if(a) _dlDoc(a); }
+function _dlDoc(a) { saveBlob(fmtText(a),'Audit_'+a.bdaEmail.split('@')[0]+'_'+a.callDate+'.txt','text/plain;charset=utf-8'); }
+function dlExcel() { if(currentAudit) _dlExcel(currentAudit); }
+function dlExcelById(id) { const a=allAudits().find(x=>String(x.id)===String(id)); if(a) _dlExcel(a); }
+function _dlExcel(a) {
+  const q=v=>'"'+String(v||'').replace(/"/g,'""')+'"';
+  const rows=[['Field','Value'],['Problem Statement',a.psLabel],['BDA Email',a.bdaEmail],['Lead Email',a.leadEmail],['Date of Call',a.callDate],['Date of Audit',a.auditDate],['Recording File',a.fileName||'N/A'],['Audited At',a.timestamp],['',''],['=== AUDIT FINDINGS ===',''],...a.result.split('\n').map(l=>['',l])];
+  saveBlob(rows.map(r=>r.map(q).join(',')).join('\r\n'),'Audit_'+a.bdaEmail.split('@')[0]+'_'+a.callDate+'.csv','text/csv;charset=utf-8');
+}
+function dlSummDoc() { if(currentSummary) saveBlob(fmtSummText(currentSummary),'Summary_'+currentSummary.bda.split('@')[0]+'_'+currentSummary.ps+'.txt','text/plain;charset=utf-8'); }
+function dlSummExcel() {
+  if (!currentSummary) return;
+  const q=v=>'"'+String(v||'').replace(/"/g,'""')+'"';
+  const s=currentSummary;
+  const rows=[['Field','Value'],['BDA Email',s.bda],['Problem Statement',s.psLabel],['Audits Reviewed',s.auditCount],['Generated At',s.timestamp],['Calls Covered',s.audits.map(a=>a.leadEmail+' ('+a.callDate+')').join('; ')],['',''],['=== SUMMARY ===',''],...s.result.split('\n').map(l=>['',l])];
+  saveBlob(rows.map(r=>r.map(q).join(',')).join('\r\n'),'Summary_'+s.bda.split('@')[0]+'_'+s.ps+'.csv','text/csv;charset=utf-8');
+}
+
+// ════════════════════════════════════════════════════════
+//  PROMPTS
+// ════════════════════════════════════════════════════════
+const PS_PROMPTS = {
+ps1:`You are an expert Sales Quality Auditor for Crio.Do, an online tech learning platform. You are auditing a real sales call between a BDA and a lead.
+IMPORTANT: Listen to the ENTIRE audio. Base every finding strictly on what was actually said. Reference specific moments and phrases.
+Problem: QUALIFIED LEAD NOT CONVERTED — find the root cause.
+
+1. PROFILING & NEED IDENTIFICATION
+- What background, experience, role, salary, goals were identified
+- What was missed: education clarity, urgency, readiness, fear, learning bandwidth, financial runway, seriousness, role clarity
+- Contradictions, confusion, or unvalidated assumptions
+- Emotional signals (fear, hesitation, low confidence) — cite the moment
+
+2. PROBING QUALITY
+- Diagnostic or surface-level? Give call examples.
+- Missing probes: failures, rejections, blockers, fear, urgency, timeline
+- Did probing stop too early or become leading?
+- Exact gaps that blocked accurate qualification
+
+3. SOLUTION MAPPING / PROGRAM EXPLANATION
+- Tailored or generic? Curriculum dumping vs role-based mapping — cite where
+- Did explanation match learner level (beginner vs experienced)?
+- Confusion from multiple role pitches (SD, QA, DA mixed)?
+
+4. PITCH & VALUE CREATION
+- How well was value linked to learner's pain and goals?
+- Over-technical or outcome-only pitching?
+- Was emotional and career relevance established?
+- Was "why this program for you" logic present?
+
+5. PRICING & FINANCIAL FRAMING
+- When was pricing introduced? Note the moment.
+- Was ROI logic built before price?
+- Confusion in scholarship, EMI, discounts?
+- Was pricing contextualised to learner's background and risk?
+
+6. OBJECTION HANDLING (+ Recommended Script)
+- Exact objection or hesitation from the lead
+- Acknowledged, probed, or dismissed?
+- Defensive or generic responses?
+- Provide a clear recommended script for that specific objection
+
+7. CONVERSION GAP — REASON FOR NON-CLOSURE
+- Why did the lead not convert? Link to specific BDA behaviour.
+- Do NOT blame the lead.
+
+8. RECOVERY PLAN / NEXT ACTION
+- Exact next-call guidance. What to reframe, simplify, reassure, or re-diagnose.
+- Actionable and specific — not generic.
+
+9. OVERALL OBSERVATIONS (Lead-Specific RCA)
+- Call quality summary and key mistakes
+- Lead profile: high-intent, low-intent, high-fear, wrong-fit, or mishandled?
+- Was failure due to process, pitch, probing, or call control?
+- No generic conclusions.
+
+10. AREA OF IMPROVEMENT (What BDA Should Have Done Better)
+- What the BDA should have asked but didn't
+- What the BDA should have stopped doing
+- Where the BDA lost control or clarity
+- How the BDA could have handled the situation better`,
+
+ps2:`You are an expert Sales Quality Auditor for Crio.Do. Auditing a real sales call between a BDA and a lead.
+IMPORTANT: Listen to the ENTIRE audio. Base every finding on what was actually said.
+Problem: LONG CALL WITH NO SESSION BOOKING — call ran long but ended without booking a trial-webinar, TnC, or 1-1.
+
+1. PROFILING & NEED IDENTIFICATION
+- What was identified vs missed (education clarity, urgency, readiness, fear, bandwidth, financial runway, seriousness, role clarity)
+- Contradictions, unvalidated assumptions, emotional signals
+
+2. PROBING QUALITY
+- Diagnostic or surface-level? Missing probes: failures, rejections, blockers, fear, urgency, timeline
+- Did probing stop too early or become leading?
+
+3. SOLUTION MAPPING / PROGRAM EXPLANATION
+- Tailored or generic? Curriculum dumping? Matched learner level?
+- Confusion from multiple role pitches?
+
+4. PITCH & VALUE CREATION
+- Value linked to learner's pain? Over-technical pitching?
+- Emotional and career relevance? "Why this program for you" logic?
+
+5. PRICING & FINANCIAL FRAMING
+- When introduced? ROI logic before price? Confusion in EMI/scholarships?
+- Contextualised to learner's background?
+
+6. OBJECTION HANDLING (+ Recommended Script)
+- Exact objection. Acknowledged or dismissed? Defensive responses?
+- Recommended script for that specific objection.
+
+7. REASON FOR NO BOOKING
+- Why was no session booked? Link to specific call behaviours.
+- Was a CTA attempted? When and how? What made the lead disengage?
+
+8. CTA ASSESSMENT
+- Was a clear, confident CTA given? Was it reinforced?
+- Was there urgency or value framing around the session?
+- What exact words should the BDA have used?
+
+9. OVERALL OBSERVATIONS (Lead-Specific RCA)
+- Call quality, key mistakes, lead profile, root cause of failure. No generic conclusions.
+
+10. AREA OF IMPROVEMENT (What BDA Should Have Done Better)
+- What to ask, what to stop, where control was lost, how to handle better.`,
+
+ps3:`You are an expert Sales Quality Auditor for Crio.Do. Auditing a real sales call between a BDA and a lead.
+IMPORTANT: Listen to the ENTIRE audio. Base every finding on what was actually said.
+Problem: SESSION BOOKED BUT NOT ATTENDED — session was booked but lead did not show up. Find why commitment was weak.
+
+1. PROFILING & NEED IDENTIFICATION
+- What was identified vs missed. Contradictions, unvalidated assumptions, emotional signals.
+
+2. PROBING QUALITY
+- Diagnostic or surface-level? Missing probes. Did probing stop too early?
+
+3. SOLUTION MAPPING / PROGRAM EXPLANATION
+- Tailored or generic? Curriculum dumping? Matched learner level?
+
+4. PITCH & VALUE CREATION
+- Value linked to pain? "Why this program for you" logic present?
+
+5. PRICING & FINANCIAL FRAMING
+- When introduced? ROI logic before price? Confusion in EMI/scholarships?
+
+6. OBJECTION HANDLING (+ Recommended Script)
+- Exact objection. Acknowledged or dismissed? Recommended script.
+
+7. SESSION POSITIONING & ATTENDANCE REINFORCEMENT
+- How was the session sold to the lead? Was VALUE of attending communicated?
+- Was there a commitment/confirmation loop before the call ended?
+- Were reminders, stakes, or urgency tied to attendance?
+- Did the lead sound genuinely excited or just politely agreeing?
+
+8. REASON FOR NO-SHOW
+- Why did the lead likely not attend? Was booking superficial?
+- Trust gap, confusion about format, or low perceived value?
+- Link to specific moments where commitment was weak.
+
+9. OVERALL OBSERVATIONS (Lead-Specific RCA)
+- Call quality, key mistakes, lead profile, root cause. No generic conclusions.
+
+10. AREA OF IMPROVEMENT (What BDA Should Have Done Better)
+- What to ask, what to stop, where control was lost, how to handle better.`,
+
+ps4:`You are a Senior Sales Coach and Mentor at Crio.Do reviewing a call by a BDA in OJT who is struggling to generate revenue.
+IMPORTANT: Listen to the ENTIRE audio. Base every finding on what was actually said. Cite real moments.
+Your tone must be MENTORING, SELF-COACHABLE, and DEVELOPMENTAL throughout. Growth map — not a report card.
+
+1. PROFILING & NEED IDENTIFICATION
+- What did the BDA successfully identify? Celebrate small wins with specifics.
+- What was missed? Frame as learning opportunities.
+- Were there emotional signals the BDA could have picked up on?
+
+2. PROBING QUALITY
+- Curious or going through a checklist? Give examples.
+- What probes were missing? Coach them: "A good probe here would have been..."
+
+3. SOLUTION MAPPING / PROGRAM EXPLANATION
+- What worked? Where did it become generic?
+- Did explanation match where the learner was in their journey?
+- Mentor note: How to pitch better for this specific lead profile.
+
+4. PITCH & VALUE CREATION
+- Genuine attempt to connect value to learner's story?
+- What emotional or career hooks were unused?
+- Coach them on building the "why this is for you" narrative.
+
+5. PRICING & FINANCIAL FRAMING
+- When did pricing come up? Was the BDA ready?
+- Was there ROI framing or did price land without context?
+- How can the BDA handle pricing more confidently next time?
+
+6. OBJECTION HANDLING (+ Recommended Script)
+- What objection came up and how did the BDA respond?
+- Confident, hesitant, or deflective?
+- Mentor note: Here is a better way — provide a warm, specific recommended script.
+
+7. CONVERSION GAP — REASON FOR NON-CLOSURE
+- Why didn't it convert? Frame constructively.
+- What was the BDA close to getting right?
+- What ONE thing could have changed the outcome?
+
+8. RECOVERY PLAN / NEXT ACTION
+- What should the BDA focus on in the next call?
+- Give them a clear, confident talking track for follow-up.
+
+9. OVERALL OBSERVATIONS (Developmental Summary)
+- What stage is this BDA at? Structural, confidence-based, or knowledge-based mistakes?
+- What are 1-2 genuine strengths to build on?
+- What is the single biggest unlock for this BDA right now?
+
+10. SELF-COACHING GUIDE (Reflect, Practice & Grow)
+- Questions the BDA should ask themselves after every call.
+- What to listen back for in their own recordings.
+- Specific role-play scenarios to practice with a peer.
+- A focused weekly improvement area based on this call.
+- End with a genuine, specific encouraging note based on something real you noticed in the call.`
+};
+
+// ════════════════════════════════════════════════════════
+//  DASHBOARD
+// ════════════════════════════════════════════════════════
+let chartInstances = {};
+
+function destroyChart(id) {
+  if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }
+}
+
+function getDashAudits() {
+  const all = allAudits();
+  const from = document.getElementById('dashDateFrom')?.value || '';
+  const to = document.getElementById('dashDateTo')?.value || '';
+  const mgr = document.getElementById('dashManagerFilter')?.value || '';
+  const ps = document.getElementById('dashPsFilter')?.value || '';
+  return all.filter(a => {
+    if (from && (a.auditDate||a.callDate) < from) return false;
+    if (to && (a.auditDate||a.callDate) > to) return false;
+    if (mgr && (a.managerEmail||'') !== mgr) return false;
+    if (ps && a.psId !== ps) return false;
+    return true;
+  });
+}
+
+function clearDashFilters() {
+  ['dashDateFrom','dashDateTo','dashManagerFilter','dashPsFilter'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  renderDashboard();
+}
+
+function populateDashManagerFilter() {
+  const all = allAudits();
+  const mgrs = [...new Set(all.map(a => a.managerEmail).filter(Boolean))].sort();
+  const sel = document.getElementById('dashManagerFilter');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Managers</option>' +
+    mgrs.map(m => '<option value="'+esc(m)+'"'+(m===cur?' selected':'')+'>'+esc(m)+'</option>').join('');
+}
+
+function renderDashboard() {
+  if (!document.getElementById('tab-dashboard').classList.contains('active')) return;
+  populateDashManagerFilter();
+  const audits = getDashAudits();
+  const all = allAudits();
+
+  // ── Stat cards ──
+  document.getElementById('dStatAudits').textContent = audits.length;
+  const mgrs = new Set(audits.map(a=>a.managerEmail).filter(Boolean));
+  document.getElementById('dStatManagers').textContent = mgrs.size || (audits.length ? '—' : 0);
+  const bdas = new Set(audits.map(a=>a.bdaEmail).filter(Boolean));
+  document.getElementById('dStatBdas').textContent = bdas.size;
+  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate()-7);
+  const weekStr = weekAgo.toISOString().split('T')[0];
+  const weekCount = audits.filter(a=>(a.auditDate||a.callDate)>=weekStr).length;
+  document.getElementById('dStatThisWeek').textContent = weekCount;
+  document.getElementById('dStatWeekLabel').textContent = 'past 7 days';
+
+  // ── Trend chart (audits per day) ──
+  destroyChart('trend');
+  const trendMap = {};
+  audits.forEach(a => { const d=a.auditDate||a.callDate||''; if(d) trendMap[d]=(trendMap[d]||0)+1; });
+  const trendDates = Object.keys(trendMap).sort();
+  const trendCtx = document.getElementById('chartTrend').getContext('2d');
+  chartInstances['trend'] = new Chart(trendCtx, {
+    type: 'line',
+    data: {
+      labels: trendDates,
+      datasets: [{ label:'Audits', data: trendDates.map(d=>trendMap[d]), borderColor:'#4f6ef7', backgroundColor:'rgba(79,110,247,.12)', fill:true, tension:.35, pointRadius:3, pointBackgroundColor:'#4f6ef7' }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{ticks:{color:'#8b92b8',maxRotation:45,font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}}, y:{ticks:{color:'#8b92b8',font:{size:10}},grid:{color:'rgba(255,255,255,.06)'}} } }
+  });
+
+  // ── PS breakdown (doughnut) ──
+  destroyChart('ps');
+  const psMap = {ps1:0,ps2:0,ps3:0,ps4:0};
+  audits.forEach(a=>{ if(a.psId) psMap[a.psId]=(psMap[a.psId]||0)+1; });
+  const psCtx = document.getElementById('chartPsBreakdown').getContext('2d');
+  chartInstances['ps'] = new Chart(psCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['PS1 Non-Conv.','PS2 No Booking','PS3 No-Show','PS4 OJT'],
+      datasets: [{ data: [psMap.ps1,psMap.ps2,psMap.ps3,psMap.ps4], backgroundColor:['#4f6ef7','#7c3aed','#34d399','#f87171'], borderWidth:0 }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ color:'#8b92b8', font:{size:11}, padding:12 } } } }
+  });
+
+  // ── Training Gap (horizontal bar — parameter averages) ──
+  destroyChart('gap');
+  const PS_PARAMS = {
+    ps1:['Profiling','Probing','Solution Mapping','Pitch & Value','Pricing','Objection Handling','Conversion Gap','Recovery Plan','Overall Obs.','Area of Improvement'],
+    ps2:['Profiling','Probing','Solution Mapping','Pitch & Value','Pricing','Objection Handling','Reason No Booking','CTA Assessment','Overall Obs.','Area of Improvement'],
+    ps3:['Profiling','Probing','Solution Mapping','Pitch & Value','Pricing','Objection Handling','Session Positioning','Reason No-Show','Overall Obs.','Area of Improvement'],
+    ps4:['Profiling','Probing','Solution Mapping','Pitch & Value','Pricing','Objection Handling','Conversion Gap','Recovery Plan','Overall Obs.','Self-Coaching Guide']
+  };
+  const psFilter = document.getElementById('dashPsFilter')?.value;
+  const gapPs = psFilter || 'ps1';
+  const params = PS_PARAMS[gapPs];
+  // Extract scores from audit results using regex (looks for scores like "7/10" or "Score: 7")
+  const gapAudits = audits.filter(a=>a.psId===gapPs);
+  const paramScores = params.map((p,i) => {
+    const sectionNum = i + 1;
+    let scores = [];
+    gapAudits.forEach(a => {
+      const lines = (a.result||'').split('\n');
+      let inSection = false;
+      for (const line of lines) {
+        const t = line.trim();
+        const secMatch = t.match(/^(\d{1,2})\./);
+        if (secMatch) { inSection = parseInt(secMatch[1]) === sectionNum; }
+        if (inSection) {
+          const m = t.match(/^Score:\s*(\d+)\s*\/\s*10/i);
+          if (m) { scores.push(parseInt(m[1])); break; }
+        }
+      }
+    });
+    const avg = scores.length ? Math.round((scores.reduce((a,b)=>a+b,0)/scores.length)*10)/10 : null;
+    return avg;
+  });
+
+  const hasScores = paramScores.some(s=>s!==null);
+  const gapNote = document.getElementById('trainingGapNote');
+
+  if (!hasScores) {
+    gapNote.style.display='block';
+    gapNote.innerHTML = '⚠ Scores not yet extractable from current audits — the chart will populate once audits include explicit scores (e.g. "7/10") per parameter. Showing equal baseline for now.';
+    // Show equal baseline
+    paramScores.fill(5);
+  } else {
+    gapNote.style.display='none';
+  }
+
+  const gapCtx = document.getElementById('chartTrainingGap').getContext('2d');
+  const gapColors = paramScores.map(s => {
+    if (s===null||s<=3) return 'rgba(248,113,113,.8)';
+    if (s<=6) return 'rgba(251,191,36,.8)';
+    return 'rgba(52,211,153,.8)';
+  });
+  chartInstances['gap'] = new Chart(gapCtx, {
+    type: 'bar',
+    data: {
+      labels: params,
+      datasets: [{ label:'Avg Score', data: paramScores.map(s=>s??5), backgroundColor: gapColors, borderRadius:5 }]
+    },
+    options: {
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => ' Score: '+(ctx.raw!==null?ctx.raw.toFixed(1):'N/A')+' / 10' } } },
+      scales:{
+        x:{ min:0, max:10, ticks:{color:'#8b92b8',font:{size:10}}, grid:{color:'rgba(255,255,255,.05)'} },
+        y:{ ticks:{color:'#c5cae0',font:{size:11}}, grid:{display:false} }
+      }
+    }
+  });
+
+  // ── BDA Leaderboard ──
+  destroyChart('bda');
+  const bdaMap = {};
+  audits.forEach(a=>{ if(a.bdaEmail) bdaMap[a.bdaEmail]=(bdaMap[a.bdaEmail]||0)+1; });
+  const bdaSorted = Object.entries(bdaMap).sort((a,b)=>b[1]-a[1]).slice(0,15);
+  const bdaCtx = document.getElementById('chartBdaLeaderboard').getContext('2d');
+  chartInstances['bda'] = new Chart(bdaCtx, {
+    type:'bar',
+    data:{
+      labels: bdaSorted.map(([e])=>e.split('@')[0]),
+      datasets:[{ label:'Audits', data:bdaSorted.map(([,c])=>c), backgroundColor:'rgba(124,58,237,.75)', borderRadius:5 }]
+    },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{ticks:{color:'#8b92b8',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}}, y:{ticks:{color:'#8b92b8',font:{size:10}},grid:{color:'rgba(255,255,255,.06)'}} } }
+  });
+
+  // ── Manager table ──
+  const mgrMap = {};
+  audits.forEach(a => {
+    const m = a.managerEmail || 'unknown';
+    if (!mgrMap[m]) mgrMap[m] = { count:0, lastDate:'', psCount:{} };
+    mgrMap[m].count++;
+    const d = a.auditDate||a.callDate||'';
+    if (d > mgrMap[m].lastDate) mgrMap[m].lastDate = d;
+    mgrMap[m].psCount[a.psId] = (mgrMap[m].psCount[a.psId]||0)+1;
+  });
+  const mgrSorted = Object.entries(mgrMap).sort((a,b)=>b[1].count-a[1].count);
+  document.getElementById('dashMgrCount').textContent = mgrSorted.length + ' manager' + (mgrSorted.length!==1?'s':'');
+  const tbody = document.getElementById('dashMgrBody');
+  if (!mgrSorted.length) { tbody.innerHTML='<tr><td colspan="5" class="no-data">No audit data yet.</td></tr>'; return; }
+  tbody.innerHTML = mgrSorted.map(([email, d], i) => {
+    const rankClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const topPs = Object.entries(d.psCount).sort((a,b)=>b[1]-a[1])[0];
+    const topPsLabel = topPs ? (PS_SHORT[topPs[0]]||topPs[0]) : '—';
+    return '<tr><td><span class="rank-badge '+rankClass+'">'+(i+1)+'</span></td>'+
+      '<td class="td-primary">'+esc(email)+'</td>'+
+      '<td><strong>'+d.count+'</strong></td>'+
+      '<td>'+esc(d.lastDate||'—')+'</td>'+
+      '<td><span class="ps-badge">'+topPsLabel+'</span></td></tr>';
+  }).join('');
+}
+
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'summary') refreshBdaList();
+  if (id === 'dashboard') renderDashboard();
+}
+</script>
+</body>
+</html>
